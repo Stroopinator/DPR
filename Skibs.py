@@ -56,12 +56,14 @@ def inMatch(team, match):
     return team == match["red_1"] | team == match["red_2"] | team == match["red_3"] | team == match["blue_1"] | team == match["blue_2"] | team == match["blue_3"]
 
 sb = statbotics.Statbotics()
+temp = 0
 _event = "2024wasam"
-teams = sb.get_teams(district = 'pnw', active = True)
+teams = sb.get_teams(country = 'USA', limit = 10000)
+print(len(teams))
 dict = {}
 tempDict = {'Number' : [],
         'Name' : [],
-        'DPR': []} 
+        'DPR': []}
 dataOut = []
 
 
@@ -69,7 +71,11 @@ dataOut = []
 #print(sb.get_team_events(team = 5827, year = 2024))
 
 for t in teams:
+    temp += 1
     cur = team(sb.get_team(t["team"])["name"], t["team"])
+    if(temp % 10 == 0):
+        print(cur.getName() + " " + str(temp))
+    
     for i in sb.get_matches(team = cur.getNumber(), year = 2024):
         if(i["comp_level"] != "qm"):
             if getColor(cur.getNumber(), i):
@@ -88,6 +94,7 @@ for t in teams:
     #dataOut.append([dict[i].formatData()])
 
 df = pd.DataFrame(tempDict)
+pd.set_option('display.max_rows', None)
 print(tabulate(df, headers = 'keys', tablefmt = 'psql'))
 #df.style
 #df.to_csv('dataFile.csv', index=False)
