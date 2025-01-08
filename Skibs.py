@@ -3,6 +3,7 @@ import csv
 import pandas as pd
 from IPython.display import display
 from tabulate import tabulate
+import numpy as np
 
 
 class team:
@@ -11,6 +12,7 @@ class team:
     dRating = 1
     games = 1
     matchDPR = []
+
 
     def __init__(self, name, number):
         self.name = name
@@ -55,37 +57,64 @@ def getColor(team, match):
 def inMatch(team, match):
     return team == match["red_1"] | team == match["red_2"] | team == match["red_3"] | team == match["blue_1"] | team == match["blue_2"] | team == match["blue_3"]
 
+def getMatchDPR(match, color):
+    if color:
+        return  match["blue_teleop_epa_sum"] - match["blue_teleop"]
+    return  match["red_teleop_epa_sum"] - match["red_teleop"]
+
+
+
 sb = statbotics.Statbotics()
 temp = 0
 _event = "2024wasam"
-teams = sb.get_teams(country = 'USA', limit = 10000)
-print(len(teams))
+teams = sb.get_team_events(event = '2024wasno')
+matches = sb.get_matches(event = '2024wasno')
+
 dict = {}
+teamDict = {}
 tempDict = {'Number' : [],
         'Name' : [],
         'DPR': []}
 dataOut = []
 
 
+matchArray = np.zeros((len(matches)*2, len(teams)))
+matchDPRArray = np.zeros(len(matches)*2)
+
+tempTeamNum = 0
+for t in teams:
+    teamDict[t["team"]] = tempTeamNum
+    tempTeamNum += 1
+
+
+
+
+
+
 
 #print(sb.get_team_events(team = 5827, year = 2024))
+matchCount = 0
+for m in matches:
+    matchArray[matchCount][teamDict[m["red_1"]]] = 1
+    matchArray[matchCount][teamDict[m["red_2"]]] = 1
+    matchArray[matchCount][teamDict[m["red_3"]]] = 1
+    matchDPRArray[matchCount] = getMatchDPR(m, True)
 
-for t in teams:
-    temp += 1
-    cur = team(sb.get_team(t["team"])["name"], t["team"])
-    if(temp % 10 == 0):
-        print(cur.getName() + " " + str(temp))
+    matchCount += 1
+
+    matchArray[matchCount][teamDict[m["blue_1"]]] = 1
+    matchArray[matchCount][teamDict[m["blue_2"]]] = 1
+    matchArray[matchCount][teamDict[m["blue_3"]]] = 1
+    matchDPRArray[matchCount] = getMatchDPR(m, False)
+
+    matchCount += 1
+
+#DO NOT TOCUH PLEASE
+matchNorm = np.dot(np.transpose(matchArray), matchArray)
+DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
+
     
-    for i in sb.get_matches(team = cur.getNumber(), year = 2024):
-        if(i["comp_level"] != "qm"):
-            if getColor(cur.getNumber(), i):
-                cur.addMatch(i["blue_teleop_epa_sum"], i["blue_teleop"])
-            else: 
-                cur.addMatch(i["red_teleop_epa_sum"], i["red_teleop"])
-    tempDict['Number'].append(cur.getNumber())
-    tempDict['Name'].append(cur.getName())
-    tempDict['DPR'].append(cur.getDPR())
-    dict[cur.getNumber()] = cur
+print(np.linalg.solve(matchNorm, DPRNorm))
 
 
 #for i in dict:
@@ -98,7 +127,7 @@ pd.set_option('display.max_rows', None)
 print(tabulate(df, headers = 'keys', tablefmt = 'psql'))
 #df.style
 #df.to_csv('dataFile.csv', index=False)
-df.to_excel('DataFrame.xlsx', sheet_name='Sheet1', index=False)
+#df.to_excel('DataFrame.xlsx', sheet_name='Sheet1', index=False)
 #display(df)
 
 #with open('dataFile.csv', mode='w', newline='') as file:
