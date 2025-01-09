@@ -4,6 +4,7 @@ import pandas as pd
 from IPython.display import display
 from tabulate import tabulate
 import numpy as np
+import sys
 
 
 class team:
@@ -66,14 +67,13 @@ def getMatchDPR(match, color):
 
 sb = statbotics.Statbotics()
 temp = 0
-_event = "2024wasam"
-teams = sb.get_team_events(event = '2024wasno')
-matches = sb.get_matches(event = '2024wasno')
+_event = "2024pncmp"
+teams = sb.get_team_events(event = _event)
+matches = sb.get_matches(event = _event)
 
 dict = {}
 teamDict = {}
 tempDict = {'Number' : [],
-        'Name' : [],
         'DPR': []}
 dataOut = []
 
@@ -95,19 +95,20 @@ for t in teams:
 #print(sb.get_team_events(team = 5827, year = 2024))
 matchCount = 0
 for m in matches:
-    matchArray[matchCount][teamDict[m["red_1"]]] = 1
-    matchArray[matchCount][teamDict[m["red_2"]]] = 1
-    matchArray[matchCount][teamDict[m["red_3"]]] = 1
-    matchDPRArray[matchCount] = getMatchDPR(m, True)
+    #if m["comp_level"] == "qm":
+        matchArray[matchCount][teamDict[m["red_1"]]] = 1
+        matchArray[matchCount][teamDict[m["red_2"]]] = 1
+        matchArray[matchCount][teamDict[m["red_3"]]] = 1
+        matchDPRArray[matchCount] = getMatchDPR(m, True)
 
-    matchCount += 1
+        matchCount += 1
 
-    matchArray[matchCount][teamDict[m["blue_1"]]] = 1
-    matchArray[matchCount][teamDict[m["blue_2"]]] = 1
-    matchArray[matchCount][teamDict[m["blue_3"]]] = 1
-    matchDPRArray[matchCount] = getMatchDPR(m, False)
+        matchArray[matchCount][teamDict[m["blue_1"]]] = 1
+        matchArray[matchCount][teamDict[m["blue_2"]]] = 1
+        matchArray[matchCount][teamDict[m["blue_3"]]] = 1
+        matchDPRArray[matchCount] = getMatchDPR(m, False)
 
-    matchCount += 1
+        matchCount += 1
 
 #DO NOT TOCUH PLEASE
     
@@ -115,36 +116,33 @@ for m in matches:
 #print(matchDPRArray)
 dprs = np.linalg.lstsq(matchArray, matchDPRArray)   
 
+floor = sys.maxsize
+ceiling = -sys.maxsize - 1
+for dpr in dprs[0]:
+    ceiling = max(ceiling, dpr)
+    floor = min(floor, dpr)
+
+
+
+
 #matchNorm = np.dot(np.transpose(matchArray), matchArray)
 #DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
 
 for t in teams:
-    print(str(t["team"]) + " " + str(dprs[0][teamDict[t["team"]]]))
+    tempDict["Number"].append(t["team"])
+    tempDict["DPR"].append(round((dprs[0][teamDict[t["team"]]] + abs(floor)) / (abs(floor) + ceiling),2))
 
 
     
 #print(np.linalg.solve(matchNorm, DPRNorm))
 
 
-#for i in dict:
-    #print(dict[i].getName() + " " + dict[i].getDPR())
-    #print(dict[i].formatData())
-    #dataOut.append([dict[i].formatData()])
-
+print(dprs[1])
 df = pd.DataFrame(tempDict)
+sorted_df = df.sort_values(by='DPR', ascending=False)
 pd.set_option('display.max_rows', None)
-print(tabulate(df, headers = 'keys', tablefmt = 'psql'))
-#df.style
-#df.to_csv('dataFile.csv', index=False)
-#df.to_excel('DataFrame.xlsx', sheet_name='Sheet1', index=False)
-#display(df)
+print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql'))
 
-#with open('dataFile.csv', mode='w', newline='') as file:
-    #writer = csv.writer(file)
-    #for i in dataOut:
-        #writer.writerows([i])
-
-print("all done fuck off")
 
 
 
