@@ -59,7 +59,7 @@ def inMatch(team, match):
 
 def getMatchDPR(match, color):
     if color:
-        return  match["blue_teleop_epa_sum"] - match["blue_teleop"]
+        return match["blue_teleop_epa_sum"] - match["blue_teleop"]
     return  match["red_teleop_epa_sum"] - match["red_teleop"]
 
 
@@ -110,11 +110,20 @@ for m in matches:
     matchCount += 1
 
 #DO NOT TOCUH PLEASE
-matchNorm = np.dot(np.transpose(matchArray), matchArray)
-DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
+    
+#print(matchArray)
+#print(matchDPRArray)
+dprs = np.linalg.lstsq(matchArray, matchDPRArray)   
+
+#matchNorm = np.dot(np.transpose(matchArray), matchArray)
+#DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
+
+for t in teams:
+    print(str(t["team"]) + " " + str(dprs[0][teamDict[t["team"]]]))
+
 
     
-print(np.linalg.solve(matchNorm, DPRNorm))
+#print(np.linalg.solve(matchNorm, DPRNorm))
 
 
 #for i in dict:
