@@ -43,9 +43,13 @@ _event = "2024pncmp"
 teams = sb.get_team_events(event = _event)
 matches = sb.get_matches(event = _event)
 
+name_dict = {item["team"]: item["name"] for item in sb.get_teams(district = "pnw", fields = ["team", "name"], limit = 10000)}
+
 teamDict = {}
-tempDict = {'Number' : [],
+tempDict = {'Number': [],
+        'Name' : [],
         'DPR': [],
+        'EPA' : [],
         'SDV' : []}
 SDVDict = {}
 dataOut = []
@@ -95,7 +99,7 @@ for m in matches:
     
 #print(matchArray)
 #print(matchDPRArray)
-dprs = np.linalg.lstsq(matchArray, matchDPRArray)   
+dprs = np.linalg.lstsq(matchArray, matchDPRArray, rcond=None)   
 
 floor = sys.maxsize
 ceiling = -sys.maxsize - 1
@@ -111,9 +115,23 @@ for dpr in dprs[0]:
 
 for t in teams:
     #dataOut({t["team"], dprs[0][teamDict[t["team"]]]})
+    tempDict['EPA'].append(sb.get_team_event(team = t["team"], event = _event)['epa_mean'])
+
     tempDict["Number"].append(t["team"])
+
+
+
     tempDict["DPR"].append(round((dprs[0][teamDict[t["team"]]] + abs(floor)) / (abs(floor) + ceiling),2))
+#Jayden haung is a meanie
+
     tempDict["SDV"].append(SDVDict[t["team"]].getSDV())
+
+
+
+
+
+    tempDict["Name"].append(name_dict[t["team"]])
+    
 
 
     
@@ -124,9 +142,8 @@ print(dprs[1])
 df = pd.DataFrame(tempDict)
 sorted_df = df.sort_values(by='DPR', ascending=False)
 pd.set_option('display.max_rows', None)
-print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql'))
-
-
+print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql', showindex=False))
+df.to_excel('DataFrame.xlsx', index=False)
 
 
 
