@@ -1,6 +1,6 @@
 Dev - John "Jack" Alexander Zouxiang Strathy
 
-Dev - Jayden Haung added the requirements file
+Dev - Jaiden Hong added the requirements file
 
 Dev - Satvik Reddy instrumental in testing and development
 
