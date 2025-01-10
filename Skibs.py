@@ -22,6 +22,8 @@ class team:
         self._totalDPR += DPR
 
     def getSDV(self):
+        if len(self._matchDPR) == 0:
+            return "Invalid"
         mean = self._totalDPR/len(self._matchDPR)
         ans = 0
         for dpr in self._matchDPR:
@@ -45,7 +47,7 @@ def getMatchDPR(match, color):
 
 
 sb = statbotics.Statbotics()
-_event = "2023pncmp"
+_event = "2024caph"
 teams = sb.get_team_events(event = _event)
 matches = sb.get_matches(event = _event)
 #print(sb.get_teams(fields = ["team", "name"], limit = 10000))
@@ -80,7 +82,7 @@ for t in teams:
 #print(sb.get_team_events(team = 5827, year = 2024))
 matchCount = 0
 for m in matches:
-    if m["comp_level"] == "qm":
+    if (m["comp_level"] != "qm") & (type(m["red_score"]) == int or type(m["red_score"]) == float):
         matchArray[matchCount][teamDict[m["red_1"]]] = 1
         matchArray[matchCount][teamDict[m["red_2"]]] = 1
         matchArray[matchCount][teamDict[m["red_3"]]] = 1
