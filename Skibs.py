@@ -8,19 +8,18 @@ import sys
 
 
 class team:
-    _matchDPR = []
-    _number = 0
-    _totalDPR = 0
 
     def __init__(self, number):
-         _number = number
+        self._matchDPR = []
+        self._number = number
+        self._totalDPR = 0
 
     def getNumber(self):
-         return self._number         
+        return self._number         
     
     def addMatch(self, DPR):
-         self._matchDPR.append(DPR)
-         self._totalDPR += DPR
+        self._matchDPR.append(DPR)
+        self._totalDPR += DPR
 
     def getSDV(self):
         mean = self._totalDPR/len(self._matchDPR)
@@ -29,7 +28,7 @@ class team:
             ans += pow(mean - dpr,2)
 
         ans = ans/len(self._matchDPR)
-        return ans ** 0.5
+        return round(ans ** 0.5, 2)
          
 
 def getMatchDPR(match, color):
@@ -40,7 +39,7 @@ def getMatchDPR(match, color):
 
 
 sb = statbotics.Statbotics()
-_event = "2024cmptx"
+_event = "2024pncmp"
 teams = sb.get_team_events(event = _event)
 matches = sb.get_matches(event = _event)
 
@@ -125,7 +124,6 @@ print(dprs[1])
 df = pd.DataFrame(tempDict)
 sorted_df = df.sort_values(by='DPR', ascending=False)
 pd.set_option('display.max_rows', None)
-df.to_excel('DataFrame.xlsx', index=False)
 print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql'))
 
 
