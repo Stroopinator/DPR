@@ -32,22 +32,28 @@ class team:
          
 
 def getMatchDPR(match, color):
+    #TODO: make sure games that dont exist are added
     if color:
-        return match["blue_teleop_epa_sum"] - match["blue_teleop"]
-    return  match["red_teleop_epa_sum"] - match["red_teleop"]
+        if (match["blue_teleop_epa_sum"] != None) & (match["blue_teleop"] != None):
+            return match["blue_teleop_epa_sum"] - match["blue_teleop"]
+        else: return match["blue_epa_sum"] - match["blue_score"]
+    else:
+        if (match["red_teleop_epa_sum"] != None) & (match["red_teleop"] != None):
+            return match["red_teleop_epa_sum"] - match["red_teleop"]
+        else: return match["red_epa_sum"] - match["red_score"]
 
 
 
 sb = statbotics.Statbotics()
-_event = "2024pncmp"
+_event = "2023pncmp"
 teams = sb.get_team_events(event = _event)
 matches = sb.get_matches(event = _event)
+#print(sb.get_teams(fields = ["team", "name"], limit = 10000))
 
-name_dict = {item["team"]: item["name"] for item in sb.get_teams(district = "pnw", fields = ["team", "name"], limit = 10000)}
+#name_dict = {item["team"]: item["name"] for item in sb.get_teams(fields = ["team", "name"], limit = 10000)}
 
 teamDict = {}
 tempDict = {'Number': [],
-        'Name' : [],
         'DPR': [],
         'EPA' : [],
         'SDV' : []}
@@ -74,7 +80,7 @@ for t in teams:
 #print(sb.get_team_events(team = 5827, year = 2024))
 matchCount = 0
 for m in matches:
-    #if m["comp_level"] == "qm":
+    if m["comp_level"] == "qm":
         matchArray[matchCount][teamDict[m["red_1"]]] = 1
         matchArray[matchCount][teamDict[m["red_2"]]] = 1
         matchArray[matchCount][teamDict[m["red_3"]]] = 1
@@ -116,21 +122,10 @@ for dpr in dprs[0]:
 for t in teams:
     #dataOut({t["team"], dprs[0][teamDict[t["team"]]]})
     tempDict['EPA'].append(sb.get_team_event(team = t["team"], event = _event)['epa_mean'])
-
     tempDict["Number"].append(t["team"])
-
-
-
     tempDict["DPR"].append(round((dprs[0][teamDict[t["team"]]] + abs(floor)) / (abs(floor) + ceiling),2))
-#Jayden haung is a meanie
-
     tempDict["SDV"].append(SDVDict[t["team"]].getSDV())
-
-
-
-
-
-    tempDict["Name"].append(name_dict[t["team"]])
+    #tempDict["Name"].append(name_dict[t["team"]])
     
 
 
