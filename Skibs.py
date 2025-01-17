@@ -1,6 +1,7 @@
 import statbotics 
 import csv
 import pandas as pd
+from openpyxl import load_workbook
 from IPython.display import display
 from tabulate import tabulate
 import numpy as np
@@ -22,15 +23,7 @@ class team:
         self._totalDPR += DPR
 
     def getSDV(self):
-        if len(self._matchDPR) == 0:
-            return "Invalid"
-        mean = self._totalDPR/len(self._matchDPR)
-        ans = 0
-        for dpr in self._matchDPR:
-            ans += pow(mean - dpr,2)
-
-        ans = ans/len(self._matchDPR)
-        return round(ans ** 0.5, 2)
+        return round(np.std(a = self._matchDPR, ddof = 1),2)
          
 
 def getMatchDPR(match, color):
@@ -45,103 +38,117 @@ def getMatchDPR(match, color):
         else: return match["red_epa_sum"] - match["red_score"]
 
 
+file_path = 'DataFrame.xlsx'
+workBook = load_workbook(file_path)
+sheet_names = workBook.sheetnames
 
+# Delete all sheets
+for sheet_name in sheet_names:
+    del workBook[sheet_name]
+
+# Save the workbook
 sb = statbotics.Statbotics()
-_event = "2024caph"
-teams = sb.get_team_events(event = _event)
-matches = sb.get_matches(event = _event)
-#print(sb.get_teams(fields = ["team", "name"], limit = 10000))
 
-#name_dict = {item["team"]: item["name"] for item in sb.get_teams(fields = ["team", "name"], limit = 10000)}
+#ONLY CHANGE THIS
 
-teamDict = {}
-tempDict = {'Number': [],
-        'DPR': [],
-        'EPA' : [],
-        'SDV' : []}
-SDVDict = {}
-dataOut = []
+while(True):
+    _event = input("Enter Comp: ")
+    if _event == "quit": break
+    workBook.create_sheet(title=_event)
+    print(_event)
 
 
-matchArray = np.zeros((len(matches)*2, len(teams)))
-matchDPRArray = np.zeros(len(matches)*2)
+    teams = sb.get_team_events(event = _event)
+    matches = sb.get_matches(event = _event)
+  
 
-tempTeamNum = 0
-for t in teams:
-    cur = team(t["team"])
-    SDVDict[t["team"]] = cur
-    teamDict[t["team"]] = tempTeamNum
-    tempTeamNum += 1
-
-
-
-
+    teamDict = {}
+    tempDict = {'Number': [],
+            'DPR': [],
+            'EPA' : [],
+            'SDV' : []}
+    SDVDict = {}
+    dataOut = []
 
 
+    matchArray = np.zeros((len(matches)*2, len(teams)))
+    matchDPRArray = np.zeros(len(matches)*2)
 
-#print(sb.get_team_events(team = 5827, year = 2024))
-matchCount = 0
-for m in matches:
-    if (m["comp_level"] != "qm") & (type(m["red_score"]) == int or type(m["red_score"]) == float):
-        matchArray[matchCount][teamDict[m["red_1"]]] = 1
-        matchArray[matchCount][teamDict[m["red_2"]]] = 1
-        matchArray[matchCount][teamDict[m["red_3"]]] = 1
-        SDVDict[m["red_1"]].addMatch(getMatchDPR(m, True))
-        SDVDict[m["red_2"]].addMatch(getMatchDPR(m, True))
-        SDVDict[m["red_3"]].addMatch(getMatchDPR(m, True))
-        matchDPRArray[matchCount] = getMatchDPR(m, True)
-
-        matchCount += 1
-
-        matchArray[matchCount][teamDict[m["blue_1"]]] = 1
-        matchArray[matchCount][teamDict[m["blue_2"]]] = 1
-        matchArray[matchCount][teamDict[m["blue_3"]]] = 1
-        SDVDict[m["blue_1"]].addMatch(getMatchDPR(m, False))
-        SDVDict[m["blue_2"]].addMatch(getMatchDPR(m, False))
-        SDVDict[m["blue_3"]].addMatch(getMatchDPR(m, False))
-        matchDPRArray[matchCount] = getMatchDPR(m, False)
-
-        matchCount += 1
-
-#DO NOT TOCUH PLEASE
-    
-#print(matchArray)
-#print(matchDPRArray)
-dprs = np.linalg.lstsq(matchArray, matchDPRArray, rcond=None)   
-
-floor = sys.maxsize
-ceiling = -sys.maxsize - 1
-for dpr in dprs[0]:
-    ceiling = max(ceiling, dpr)
-    floor = min(floor, dpr)
+    tempTeamNum = 0
+    for t in teams:
+        cur = team(t["team"])
+        SDVDict[t["team"]] = cur
+        teamDict[t["team"]] = tempTeamNum
+        tempTeamNum += 1
 
 
 
 
-#matchNorm = np.dot(np.transpose(matchArray), matchArray)
-#DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
-
-for t in teams:
-    #dataOut({t["team"], dprs[0][teamDict[t["team"]]]})
-    tempDict['EPA'].append(sb.get_team_event(team = t["team"], event = _event)['epa_mean'])
-    tempDict["Number"].append(t["team"])
-    tempDict["DPR"].append(round((dprs[0][teamDict[t["team"]]] + abs(floor)) / (abs(floor) + ceiling),2))
-    tempDict["SDV"].append(SDVDict[t["team"]].getSDV())
-    #tempDict["Name"].append(name_dict[t["team"]])
-    
 
 
-    
-#print(np.linalg.solve(matchNorm, DPRNorm))
+
+    #print(sb.get_team_events(team = 5827, year = 2024))
+    matchCount = 0
+    for m in matches:
+        if (type(m["red_score"]) == int or type(m["red_score"]) == float):
+            matchArray[matchCount][teamDict[m["red_1"]]] = 1
+            matchArray[matchCount][teamDict[m["red_2"]]] = 1
+            matchArray[matchCount][teamDict[m["red_3"]]] = 1
+            SDVDict[m["red_1"]].addMatch(getMatchDPR(m, True))
+            SDVDict[m["red_2"]].addMatch(getMatchDPR(m, True))
+            SDVDict[m["red_3"]].addMatch(getMatchDPR(m, True))
+            matchDPRArray[matchCount] = getMatchDPR(m, True)
+
+            matchCount += 1
+
+            matchArray[matchCount][teamDict[m["blue_1"]]] = 1
+            matchArray[matchCount][teamDict[m["blue_2"]]] = 1
+            matchArray[matchCount][teamDict[m["blue_3"]]] = 1
+            SDVDict[m["blue_1"]].addMatch(getMatchDPR(m, False))
+            SDVDict[m["blue_2"]].addMatch(getMatchDPR(m, False))
+            SDVDict[m["blue_3"]].addMatch(getMatchDPR(m, False))
+            matchDPRArray[matchCount] = getMatchDPR(m, False)
+
+            matchCount += 1
+
+    #DO NOT TOCUH PLEASE
+        
+    #print(matchArray)
+    #print(matchDPRArray)
+    dprs = np.linalg.lstsq(matchArray, matchDPRArray, rcond=None)   
+
+    floor = sys.maxsize
+    ceiling = -sys.maxsize - 1
+    for dpr in dprs[0]:
+        ceiling = max(ceiling, dpr)
+        floor = min(floor, dpr)
 
 
-print(dprs[1])
-df = pd.DataFrame(tempDict)
-sorted_df = df.sort_values(by='DPR', ascending=False)
-pd.set_option('display.max_rows', None)
-print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql', showindex=False))
-df.to_excel('DataFrame.xlsx', index=False)
 
+
+    #matchNorm = np.dot(np.transpose(matchArray), matchArray)
+    #DPRNorm = np.dot(np.transpose(matchArray), matchDPRArray)
+
+    for t in teams:
+        #dataOut({t["team"], dprs[0][teamDict[t["team"]]]})
+        tempDict['EPA'].append(sb.get_team_event(team = t["team"], event = _event)['epa_mean'])
+        tempDict["Number"].append(t["team"])
+        tempDict["DPR"].append(round((dprs[0][teamDict[t["team"]]] + abs(floor)) / (abs(floor) + ceiling),2))
+        tempDict["SDV"].append(SDVDict[t["team"]].getSDV())
+        #tempDict["Name"].append(name_dict[t["team"]])
+        
+
+
+        
+    #print(np.linalg.solve(matchNorm, DPRNorm))
+
+
+    print(dprs[1])
+    df = pd.DataFrame(tempDict)
+    sorted_df = df.sort_values(by='DPR', ascending=False)
+    pd.set_option('display.max_rows', None)
+    print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql', showindex=False))
+    df.to_excel('DataFrame.xlsx', index=False, sheet_name = _event)
 
 
 
