@@ -6,6 +6,7 @@ from IPython.display import display
 from tabulate import tabulate
 import numpy as np
 import sys
+from tabulate import tabulate
 
 
 class team:
@@ -44,10 +45,16 @@ def getMatchDPR(match, color):
 
 file_path = 'Stats/DataFrame.xlsx'
 workBook = load_workbook(file_path)
+print(workBook.sheetnames)
 
 # Delete all sheets
 for sheet_name in workBook.sheetnames:
-    del workBook[sheet_name]
+    if sheet_name != "Sheet1" : del workBook[sheet_name]
+
+workBook.save(file_path)
+print(workBook.sheetnames)
+
+
 
 # Save the workbook
 sb = statbotics.Statbotics()
@@ -57,7 +64,21 @@ sb = statbotics.Statbotics()
 while(True):
     _event = input("Enter Comp: ")
     if _event == "quit": break
+
     print(_event)
+
+    try:
+        matches = sb.get_matches(event = _event, limit = 1000)
+        Tempteams = sb.get_team_events(event = _event, limit = 1000)
+    except:
+        print("invalid key")
+        continue
+
+    if _event in workBook.sheetnames:
+        print("Competition already ran")
+        continue
+
+    print(workBook.sheetnames)
 
     #this query is currently broken and cannot be used
     #for now I will get a list of teams from the matches
@@ -65,8 +86,6 @@ while(True):
     #teams = sb.get_team_events(event = _event)
 
     #matches = sb.get_matches(event = _event)
-    matches = sb.get_matches(event = _event, limit = 1000)
-    Tempteams = sb.get_team_events(event = _event, limit = 1000)
     teams = {}
 
     for t in Tempteams:
@@ -82,8 +101,8 @@ while(True):
     dataOut = []
 
 
-    matchArray = np.zeros((len(matches)*2, len(teams)))
-    matchDPRArray = np.zeros(len(matches)*2)
+    matchArray = []
+    matchDPRArray = []
 
     tempTeamNum = 0
 
@@ -107,29 +126,42 @@ while(True):
     for m in matches:
         if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None:
             redDPR = getMatchDPR(m,True)
-
+            tempTeams = []
             for t in m['alliances']['red']['team_keys']:
-                matchArray[matchCount][teamDict[t]] = 1
+                tempTeams.append(t)
                 SDVDict[t].addMatch(getMatchDPR(m, True))
 
-            matchDPRArray[matchCount] = getMatchDPR(m, True)
+            
+            matchArray.append(tempTeams)
+            matchDPRArray.append(getMatchDPR(m, True))
             matchCount += 1
 
             blueDPR = getMatchDPR(m,False)
-
+            tempTeams = []
             for t in m['alliances']['blue']['team_keys']:
-                matchArray[matchCount][teamDict[t]] = 1
+                tempTeams.append(t)
                 SDVDict[t].addMatch(getMatchDPR(m, False))
 
                 #not sure whether this line goes in the loop or not
-            matchDPRArray[matchCount] = getMatchDPR(m, False)
+            matchArray.append(tempTeams)
+            matchDPRArray.append(getMatchDPR(m, False))
             matchCount += 1
 
     #DO NOT TOCUH PLEASE
         
     #print(matchArray)
     #print(matchDPRArray)
-    dprs = np.linalg.lstsq(matchArray, matchDPRArray, rcond=None)   
+            
+    NDMatchArray = np.zeros((len(matchArray), len(teams)))
+    NDMatchDPRArray = np.zeros(len(matchArray))
+
+    for i in range(len(matchArray)):
+        NDMatchDPRArray[i] = matchDPRArray[i]
+        NDMatchArray[i][teamDict[matchArray[i][0]]] = 1
+        NDMatchArray[i][teamDict[matchArray[i][1]]] = 1
+        NDMatchArray[i][teamDict[matchArray[i][2]]] = 1 
+
+    dprs = np.linalg.lstsq(NDMatchArray, NDMatchDPRArray, rcond=None)   
 
     floor = sys.maxsize
     ceiling = -sys.maxsize - 1
@@ -165,10 +197,14 @@ while(True):
     pd.set_option('display.max_rows', None)
     print(tabulate(sorted_df, headers = 'keys', tablefmt = 'psql', showindex=False))
 
-    new_sheet = workBook.create_sheet(title=_event)
-    workBook.save(file_path)
+    #new_sheet = workBook.create_sheet(title=_event)
 
-    df.to_excel(file_path, index=False, sheet_name=_event)
+    #workBook.save(file_path)
+
+    with pd.ExcelWriter(file_path, engine='openpyxl', mode='a') as writer:
+        workBook.create_sheet(title=_event)
+        sorted_df.to_excel(writer, index=False, sheet_name=_event)
+
     print(workBook.sheetnames)
 
 
