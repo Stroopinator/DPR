@@ -120,9 +120,9 @@ while(True):
         #could have broken something here
     matchCount = 0
     for m in matches:
-        if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None:
+        if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None and m["comp_level"] == 'qm':
             tempTeams = []
-            if getMatchDPR(m, True) <= eventName["epa"]["top_8"]:
+            if (getMatchDPR(m, True) <= eventName["epa"]["top_8"]):
                 for t in m['alliances']['red']['team_keys']:
                     tempTeams.append(t)
                     SDVDict[t].addMatch(getMatchDPR(m, True))
