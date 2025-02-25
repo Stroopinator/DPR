@@ -29,7 +29,7 @@ class team:
 def getMatchDPR(match, color):
 
     sum = 0
-    #TODO: make sure games that dont exist are added
+
     if color:
         for t in match['alliances']['blue']['team_keys']:
             sum += teams[t]['epa']['breakdown']['teleop_points'] 
@@ -70,6 +70,7 @@ while(True):
     try:
         matches = sb.get_matches(event = _event, limit = 1000)
         Tempteams = sb.get_team_events(event = _event, limit = 1000)
+        eventName = sb.get_event(event=_event)
     except:
         print("invalid key")
         continue
@@ -80,12 +81,7 @@ while(True):
 
     print(workBook.sheetnames)
 
-    #this query is currently broken and cannot be used
-    #for now I will get a list of teams from the matches
-    #TODO: uncomment this when it is fixed
-    #teams = sb.get_team_events(event = _event)
 
-    #matches = sb.get_matches(event = _event)
     teams = {}
 
     for t in Tempteams:
@@ -125,27 +121,26 @@ while(True):
     matchCount = 0
     for m in matches:
         if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None:
-            redDPR = getMatchDPR(m,True)
             tempTeams = []
-            for t in m['alliances']['red']['team_keys']:
-                tempTeams.append(t)
-                SDVDict[t].addMatch(getMatchDPR(m, True))
+            if getMatchDPR(m, True) <= eventName["epa"]["top_8"]:
+                for t in m['alliances']['red']['team_keys']:
+                    tempTeams.append(t)
+                    SDVDict[t].addMatch(getMatchDPR(m, True))
 
-            
-            matchArray.append(tempTeams)
-            matchDPRArray.append(getMatchDPR(m, True))
-            matchCount += 1
+                matchArray.append(tempTeams)
+                matchDPRArray.append(getMatchDPR(m, True))
+                matchCount += 1
 
-            blueDPR = getMatchDPR(m,False)
             tempTeams = []
-            for t in m['alliances']['blue']['team_keys']:
-                tempTeams.append(t)
-                SDVDict[t].addMatch(getMatchDPR(m, False))
+            if getMatchDPR(m, False) <= eventName["epa"]["top_8"]:
+                for t in m['alliances']['blue']['team_keys']:
+                    tempTeams.append(t)
+                    SDVDict[t].addMatch(getMatchDPR(m, False))
 
-                #not sure whether this line goes in the loop or not
-            matchArray.append(tempTeams)
-            matchDPRArray.append(getMatchDPR(m, False))
-            matchCount += 1
+                    #not sure whether this line goes in the loop or not
+                matchArray.append(tempTeams)
+                matchDPRArray.append(getMatchDPR(m, False))
+                matchCount += 1
 
     #DO NOT TOCUH PLEASE
         
@@ -154,6 +149,7 @@ while(True):
             
     NDMatchArray = np.zeros((len(matchArray), len(teams)))
     NDMatchDPRArray = np.zeros(len(matchArray))
+    print("pruned " + str(2*len(matches) - (len(matchArray))))
 
     for i in range(len(matchArray)):
         NDMatchDPRArray[i] = matchDPRArray[i]
