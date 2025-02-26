@@ -87,12 +87,13 @@ while(True):
     for t in Tempteams:
         teams[t['team']] = t
   
-
+    matchesDict = {}
     teamDict = {}
     tempDict = {'Number': [],
             'DPR': [],
             'EPA' : [],
-            'SDV' : []}
+            'SDV' : [],
+            'Matches': []}
     SDVDict = {}
     dataOut = []
 
@@ -108,6 +109,7 @@ while(True):
         cur = team(t['team'])
         SDVDict[t['team']] = cur
         teamDict[t['team']] = tempTeamNum
+        matchesDict[t['team']] = 0
         tempTeamNum += 1
 
 
@@ -120,10 +122,11 @@ while(True):
         #could have broken something here
     matchCount = 0
     for m in matches:
-        if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None and m["comp_level"] == 'qm':
+        if m['result']['red_teleop_points'] != None and m['result']['blue_teleop_points'] != None:
             tempTeams = []
-            if (getMatchDPR(m, True) <= eventName["epa"]["top_8"]):
+            if getMatchDPR(m, True) <= eventName["epa"]["top_8"] and getMatchDPR(m, True) > 0:
                 for t in m['alliances']['red']['team_keys']:
+                    matchesDict[t]+=1
                     tempTeams.append(t)
                     SDVDict[t].addMatch(getMatchDPR(m, True))
 
@@ -132,8 +135,9 @@ while(True):
                 matchCount += 1
 
             tempTeams = []
-            if getMatchDPR(m, False) <= eventName["epa"]["top_8"]:
+            if getMatchDPR(m, False) <= eventName["epa"]["top_8"] and getMatchDPR(m, False):
                 for t in m['alliances']['blue']['team_keys']:
+                    matchesDict[t]+=1
                     tempTeams.append(t)
                     SDVDict[t].addMatch(getMatchDPR(m, False))
 
@@ -179,6 +183,7 @@ while(True):
         tempDict["Number"].append(t)
         tempDict["DPR"].append(round((dprs[0][teamDict[t]] + abs(floor)) / (abs(floor) + ceiling),2))
         tempDict["SDV"].append(SDVDict[t].getSDV())
+        tempDict["Matches"].append(matchesDict[t])
         #tempDict["Name"].append(name_dict[t["team"]])
         
 
